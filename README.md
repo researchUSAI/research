@@ -24,9 +24,9 @@ PC:
 
 /recover → this deletes the last dropped file or the last response from the model, whichever came last, it's just a way to undo what happened last - 0: yes, 1: no
 
-/intro → add a prompt prefix
+/intro → add a prompt prefix. session bound (not persistent), not release bound.
 
-/outro → add a prompt postfix
+/outro → add a prompt postfix. session bound (not persistent), not release bound.
 
 /polarity → 0: explanatory; full vocabulary 1: concise. direct answer. yes or no, if applicable.
 
@@ -47,7 +47,7 @@ You will still need to set the name of the model you would like to use with the 
 
 <img width="1133" height="211" alt="Screenshot 2025-12-20 at 12 49 02 AM" src="https://github.com/user-attachments/assets/dd0c2e5e-9415-4fe1-832e-a656758a91fb" />
 
-**RECOVERY:**
+**/RECOVERY:**
 
 <img width="1131" height="270" alt="Screenshot 2025-12-20 at 12 49 30 AM" src="https://github.com/user-attachments/assets/8439b116-8683-4d02-8574-83940107a382" />
 
@@ -77,5 +77,14 @@ You will still need to set the name of the model you would like to use with the 
 
 <img width="1125" height="281" alt="Screenshot 2025-12-20 at 12 57 31 AM" src="https://github.com/user-attachments/assets/32af839c-1e19-4c6b-b359-f3469c1a6180" />
 
+**DRAG&DROP:**
 
+Drag and drop the release to re:search 
 
+<img width="1128" height="165" alt="Screenshot 2025-12-20 at 12 59 43 AM" src="https://github.com/user-attachments/assets/297bc781-92ff-47be-8454-753805d551a0" />
+
+**/ENDPOINT:**
+
+<img width="662" height="16" alt="Screenshot 2025-12-20 at 12 59 43 AM" src="https://github.com/user-attachments/assets/8fdaae12-dafb-409a-88ed-ad8b6922781c" />
+
+The Ollama default endpoint is already set. If yours happens to be different, you will have to search for it independently. However, any search engine will help you solve the problem of locating it with minor grievances. I hope you enjoy, and best of luck with your re:search! 
