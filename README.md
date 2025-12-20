@@ -41,5 +41,41 @@ https://youtu.be/UtSSMs6ObqY?si=SZlghpMhHZPMAvP9
 
 <img width="869" height="748" alt="Screenshot 2025-12-20 at 12 44 26 AM" src="https://github.com/user-attachments/assets/f50c9367-4121-4b98-9103-16d4062e8cb0" />
 
+You will still need to set the name of the model you would like to use with the /model command, but the list is a quick reference for proper model name and spelling validation.
+
+**TYPO:**
+
+<img width="1133" height="211" alt="Screenshot 2025-12-20 at 12 49 02 AM" src="https://github.com/user-attachments/assets/dd0c2e5e-9415-4fe1-832e-a656758a91fb" />
+
+**RECOVERY:**
+
+<img width="1131" height="270" alt="Screenshot 2025-12-20 at 12 49 30 AM" src="https://github.com/user-attachments/assets/8439b116-8683-4d02-8574-83940107a382" />
+
+**/MODEL:**
+
+<img width="1131" height="171" alt="Screenshot 2025-12-20 at 12 49 59 AM" src="https://github.com/user-attachments/assets/def30c0b-9f1a-4d32-b564-d0dda9527489" />
+
+**CORRECTION:**
+
+<img width="1135" height="217" alt="Screenshot 2025-12-20 at 12 50 15 AM" src="https://github.com/user-attachments/assets/19402073-d8ad-40d0-8316-309e0e69230b" />
+
+**SOLVED:**
+
+<img width="1129" height="1007" alt="Screenshot 2025-12-20 at 12 50 43 AM" src="https://github.com/user-attachments/assets/112e8189-be25-4485-98db-23a0de717c7c" />
+
+**POLARITY:1**
+
+<img width="1133" height="189" alt="Screenshot 2025-12-20 at 12 54 56 AM" src="https://github.com/user-attachments/assets/1c1b5330-e3cd-4bc9-98b1-236f1d6b0853" />
+
+<img width="1120" height="330" alt="Screenshot 2025-12-20 at 12 55 33 AM" src="https://github.com/user-attachments/assets/41f61497-0264-4be8-aa50-9a81f8aa22b8" />
+
+**/RELEASE**
+
+<img width="1121" height="249" alt="Screenshot 2025-12-20 at 12 56 10 AM" src="https://github.com/user-attachments/assets/36c4a54e-4b78-4f8b-b204-055ea9b7ddc3" />
+
+<img width="1135" height="1089" alt="Screenshot 2025-12-20 at 12 57 03 AM" src="https://github.com/user-attachments/assets/ff9eb718-5596-4a56-8583-d079cbb32a1e" />
+
+<img width="1125" height="281" alt="Screenshot 2025-12-20 at 12 57 31 AM" src="https://github.com/user-attachments/assets/32af839c-1e19-4c6b-b359-f3469c1a6180" />
+
 
 
