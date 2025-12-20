@@ -14,6 +14,11 @@ PC:
 2. double-click `start.bat` (opens UI; keep window open)
 3. next time: double-click `start.bat` again
 
+<img width="1143" height="275" alt="Screenshot 2025-12-20 at 12 36 34 AM" src="https://github.com/user-attachments/assets/2c906318-f689-4c75-9f19-3cf88dc444bd" />
+
+<img width="888" height="198" alt="Screenshot 2025-12-20 at 12 37 45 AM" src="https://github.com/user-attachments/assets/60863b78-ed82-481a-8efb-7f23ef0fe2ac" />
+
+
 /endpoint → type in the endpoint where Ollama is running on your computer with /api/generate added at the end. for example, if your local host is http://localhost:11434/. in the window, type, http://localhost:11434/api/generate. if you're unsure what to do, search 'help me find my local ollama endpoint'.
 
 /model → type in the name of the model you plan to use, exactly as it appears at https://ollama.com/library. select your model from the Ollama window drop down menu. then, type in the Ollama chat to trigger the download. if the model you plan to use is not available in the Ollama drop down, run it from a terminal window. open a new terminal window and run the model's execution line e.g. 'ollama run gpt-oss:20b'. keep the terminal open. Then, navigate to the research window. You are ready to go! Always close the running terminal before changing models.
