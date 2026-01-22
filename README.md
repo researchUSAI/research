@@ -2,7 +2,7 @@ DOWNLOAD AND RUN OLLAMA
 
 <img width="2140" height="908" alt="highlighted-image" src="https://github.com/user-attachments/assets/07ffb6f9-3384-45dd-8414-f45ccc58c02b" />
 
-ON MAC: 
+**ON MAC:** 
 
 OPEN TERMINAL
 
@@ -28,23 +28,26 @@ TYPE
 
 PRESS ENTER
 
-PC:
-1. open the folder where you downloaded the zip file 
-2. double-click `start.bat` (opens UI; keep window open)
+**ON PC:**
 
+OPEN FOLDER 
 
-<img width="888" height="198" alt="Screenshot 2025-12-20 at 12 37 45 AM" src="https://github.com/user-attachments/assets/60863b78-ed82-481a-8efb-7f23ef0fe2ac" />
+DOUBLE CLICK
 
-<img width="1143" height="275" alt="Screenshot 2025-12-20 at 12 36 34 AM" src="https://github.com/user-attachments/assets/2c906318-f689-4c75-9f19-3cf88dc444bd" />
+start.bat
+
+**SETTINGS:** 
 
 /endpoint → change Ollama endpoint
 
-Default:
+**Default:**
+
 http://localhost:11434/api/generate
 
 /model → change Ollama model
 
-Default:
+**Default:**
+
 gpt-oss:120b-cloud
 
 /release → export JSON
@@ -54,7 +57,6 @@ gpt-oss:120b-cloud
 /intro → add a prefix preference
 
 /outro → add a postfix preference
-
 
 /polarity → 0: explanatory; 1: direct 
 
