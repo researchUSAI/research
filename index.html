@@ -97,6 +97,9 @@
       padding: 0 0.5ch;
       cursor: text;
     }
+    .message-separator {
+      height: 1em;
+    }
   </style>
 </head>
 <body>
@@ -374,6 +377,10 @@
         this.dotCount = 0;
       }
 
+      scrollToBottom() {
+        this.display.scrollTop = this.display.scrollHeight;
+      }
+
       formatStructures() {
         if (this.structures.length === 0) return '';
         return this.structures.map((s, i) => {
@@ -386,10 +393,10 @@
         return this.stack.map(line => {
           if (line.startsWith('user:\n')) {
             const probe = line.slice('user:\n'.length);
-            return '<span class="reverse-video">user:' + (probe ? '\n' + probe : '') + '</span>\n\n';
+            return '<span class="reverse-video">user:\n' + probe + '</span><div class="message-separator"></div>';
           } else if (line.startsWith('llm:\n')) {
             const response = line.slice('llm:\n'.length);
-            return 'llm:\n' + response + '\n\n';
+            return 'llm:\n' + response + '<div class="message-separator"></div>';
           }
           return line;
         }).join('');
@@ -401,9 +408,9 @@
           for (const structure of this.structures) {
             for (const entry of structure.log) {
               if (entry.type === 'initiation') {
-                fullProbe += `user:\n${entry.probe}\n\n`;
+                fullProbe += `user:\n${entry.probe}\n`;
               } else if (entry.type === 'response') {
-                fullProbe += `llm:\n${entry.probe}\n\n`;
+                fullProbe += `llm:\n${entry.probe}\n`;
               }
             }
           }
@@ -444,7 +451,7 @@
             if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('llm:\n')) {
               this.stack.pop();
             }
-            this.stack.push(`llm:\n${fullResponse}\n\n`);
+            this.stack.push(`llm:\n${fullResponse}`);
             this.render();
           }
 
@@ -480,7 +487,7 @@
             if (this.stack.length > 0) {
               output += this.formatStack();
             } else {
-              output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span>\n\n';
+              output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
             }
             output += 'llm:\n' + dots;
             blockInput = true;
@@ -550,7 +557,7 @@
             } else if (cmdLower.startsWith('/')) {
               return;
             } else {
-              this.stack.push(`user:\n${cmd}\n\n`);
+              this.stack.push(`user:\n${cmd}`);
               this.currentStructure.addInitiation(cmd);
               this.lastActionWasFileDrop = false;
               this.state = State.PROBE_WAIT;
@@ -558,7 +565,7 @@
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
               this.stopWait();
-              this.stack.push(`llm:\n${response}\n\n`);
+              this.stack.push(`llm:\n${response}`);
               this.currentStructure.addResponse(response);
               this.state = State.PROBE_RECOVER_RESPONSE;
               this.lastInitiation = null;
@@ -578,7 +585,7 @@
                   this.currentStructure.log.pop();
                 }
                 if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('user:\n')) {
-                  this.lastInitiation = this.stack[this.stack.length - 1].slice('user:\n'.length).replace(/\n\n$/, '');
+                  this.lastInitiation = this.stack[this.stack.length - 1].slice('user:\n'.length);
                   this.stack.pop();
                 } else {
                   this.lastInitiation = '';
@@ -622,7 +629,7 @@
               return;
             } else {
               if (cmd) {
-                this.stack.push(`user:\n${cmd}\n\n`);
+                this.stack.push(`user:\n${cmd}`);
                 this.currentStructure.addInitiation(cmd);
               }
               this.lastActionWasFileDrop = false;
@@ -631,7 +638,7 @@
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
               this.stopWait();
-              this.stack.push(`llm:\n${response}\n\n`);
+              this.stack.push(`llm:\n${response}`);
               this.currentStructure.addResponse(response);
               this.state = State.PROBE_RECOVER_RESPONSE;
               this.lastInitiation = null;
