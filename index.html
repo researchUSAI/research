@@ -55,21 +55,23 @@
       flex-direction: column;
       overflow: hidden;
     }
-    #display {
-      flex: 1 1 auto;
-      overflow-y: auto;
-      padding: 1em 1ch;
+    #display, #input {
+      flex: 0 0 auto;
       white-space: pre-wrap;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      max-width: 78ch;
+      padding: 0 1ch;
+      line-height: 1;
     }
     #input {
-      flex: 0 0 auto;
+      display: block;
       border: none;
       outline: none;
       background: transparent;
       color: inherit;
       font-family: inherit;
       font-size: inherit;
-      padding: 0 1ch;
     }
     #input .input-reverse {
       background: #BDCEF1;
@@ -103,7 +105,7 @@
   <div id="toolbar">
     <button id="export-btn">Export</button>
     <button id="back-btn">Back</button>
-    <button id="polarity-btn">Short</button>
+    <button id="polarity-btn">Truth Mode</button>
   </div>
   <div id="display-container">
     <div id="display"></div>
@@ -273,7 +275,7 @@
 
         document.getElementById('polarity-btn').addEventListener('click', () => {
           this.truth = !this.truth;
-          document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+          document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
           this.render();
         });
 
@@ -446,6 +448,7 @@
             }
             this.stack.push(`llm:\n${fullResponse}\n\n`);
             this.render();
+            this.scrollToBottom();
           }
 
           this.currentStructure.addResponse(fullResponse);
@@ -453,6 +456,10 @@
         } catch (e) {
           return `[ERROR: ${e.message || 'Network failure'}]`;
         }
+      }
+
+      scrollToBottom() {
+        this.display.scrollTop = this.display.scrollHeight;
       }
 
       render() {
@@ -515,6 +522,7 @@
           this.input.textContent = '';
           this.input.focus();
         }
+
         this.scrollToBottom();
       }
 
@@ -539,7 +547,7 @@
               }
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
               this.state = State.CALIBRATE_ENDPOINT_RECOVER;
@@ -606,7 +614,7 @@
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
               this.lastInitiation = null;
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
