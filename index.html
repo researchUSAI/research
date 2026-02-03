@@ -363,7 +363,7 @@
         this.dotCount = 0;
         if (this.dotInterval) clearInterval(this.dotInterval);
         this.dotInterval = setInterval(() => {
-          this.dotCount = (this.dotCount + 1) % 2;
+          this.dotCount = (this.dotCount + 1) % 4;
           this.render();
         }, 1000);
       }
@@ -457,8 +457,11 @@
       render() {
         let output = '';
         const structures = this.formatStructures();
-        let dots = ' ';
-        if (this.dotCount === 1) dots = '0';
+        let dots = '';
+        if (this.dotCount === 0) dots = '1';
+        else if (this.dotCount === 1) dots = '2';
+        else if (this.dotCount === 2) dots = '3';
+        else dots = '';
         let blockInput = false;
 
         output += 'endpoint: <span id="edit-endpoint" class="config-value" contenteditable="true">' + (this.modelEndpoint || 'NULL') + '</span>\n';
@@ -484,7 +487,7 @@
           case State.PROBE_RECOVER_CONFIRM:
             if (structures) output += structures + '\n';
             if (this.stack.length > 0) output += this.formatStack() + '\n';
-            output += 'recover?\n0\n1';
+            output += 'back?\ny\nn';
             break;
           case State.PROBE_RECOVER_EDIT:
             if (structures) output += structures + '\n';
@@ -561,10 +564,10 @@
             break;
 
           case State.PROBE_RECOVER_CONFIRM:
-            if (cmd === '0') {
+            if (cmdLower === 'n') {
               this.lastInitiation = null;
               this.state = State.PROBE_RECOVER;
-            } else if (cmd === '1') {
+            } else if (cmdLower === 'y') {
               if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
                 if (this.stack[this.stack.length - 1].startsWith('1:\n')) {
                   this.stack.pop();
