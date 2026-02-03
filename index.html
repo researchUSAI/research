@@ -27,8 +27,24 @@
       word-break: break-all;
       overflow-wrap: anywhere;
       max-width: 78ch;
-      padding: 1ch;
-      line-height: 1.2;
+      padding: 0 1ch;
+      line-height: 1;
+    }
+    #input {
+      flex: 0 0 auto;
+      display: block;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      font-size: inherit;
+      min-height: 3em;
+      padding: 0 1ch;
+    }
+    #input .input-reverse {
+      background: #BDCEF1;
+      color: #181818;
     }
     #controls {
       flex: 0 0 auto;
@@ -37,6 +53,7 @@
       gap: 1ch;
       background: #111;
       border-top: 1px solid #333;
+      justify-content: center;
     }
     button {
       background: #333;
@@ -45,7 +62,7 @@
       padding: 0.5ch 1ch;
       font-family: inherit;
       cursor: pointer;
-      min-width: 80px;
+      min-width: 90px;
     }
     button:hover {
       background: #444;
@@ -78,12 +95,15 @@
 </head>
 <body>
   <div id="display"></div>
+  <div id="input" contenteditable="true"></div>
 
   <div id="controls">
     <button id="export-btn">Export</button>
     <button id="back-btn">Back</button>
     <button id="polarity-btn">Polarity: <span id="polarity-text">Truth</span></button>
   </div>
+
+  <span id="measure">M</span>
 
   <script>
     const State = {
@@ -126,14 +146,16 @@
         this.structures = [];
         this.currentStructure = new Structure();
         this.stack = [];
-        this.localBackend = 'https://researchnexus.onrender.com'; // your real Render URL
+        this.localBackend = 'https://researchnexus.onrender.com'; // CHANGE TO YOUR REAL URL WHEN DEPLOYED
         this.modelEndpoint = 'https://api.groq.com/openai/v1';
         this.model = 'llama-3.1-70b-versatile';
         this.apiKey = '';
-        this.truth = true; // true = Truth mode, false = Exploration
+        this.truth = true;
         this.dotCount = 0;
         this.dotInterval = null;
         this.display = document.getElementById('display');
+        this.input = document.getElementById('input');
+        this.measure = document.getElementById('measure');
         this.polarityText = document.getElementById('polarity-text');
         this.setupEvents();
         this.updateDimensions();
@@ -142,6 +164,21 @@
 
       setupEvents() {
         window.addEventListener('resize', () => this.updateDimensions());
+
+        this.input.addEventListener('input', () => {
+          this.normalizeInput();
+        });
+
+        document.addEventListener('keydown', async (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const probe = this.input.textContent.trim();
+            if (probe) {
+              this.input.innerHTML = '';
+              await this.sendProbe(probe);
+            }
+          }
+        });
 
         // Editable fields
         this.display.addEventListener('input', (e) => {
@@ -170,21 +207,29 @@
         });
       }
 
+      async sendProbe(probe) {
+        this.stack.push(`0:\n${probe}`);
+        this.currentStructure.addInitiation(probe);
+        this.state = State.PROBE_WAIT;
+        this.startWait();
+        this.render();
+
+        const response = await this.coordinate(probe);
+        this.stopWait();
+        this.stack.push(`1:\n${response}`);
+        this.currentStructure.addResponse(response);
+        this.state = State.PROBE_RECOVER_RESPONSE;
+        this.render();
+      }
+
       updatePolarityDisplay() {
         this.polarityText.textContent = this.truth ? 'Truth' : 'Exploration';
         document.getElementById('polarity-btn').className = this.truth ? 'polarity-truth' : 'polarity-exploration';
       }
 
       updateDimensions() {
-        // your original resize logic
-        const measure = document.createElement('span');
-        measure.style.fontSize = '100px';
-        measure.style.visibility = 'hidden';
-        measure.style.position = 'absolute';
-        measure.textContent = 'M';
-        document.body.appendChild(measure);
-        const measuredWidth = measure.offsetWidth;
-        document.body.removeChild(measure);
+        this.measure.style.fontSize = '100px';
+        const measuredWidth = this.measure.offsetWidth;
         const pixelsPerChar = measuredWidth / 1;
         const targetWidth = window.innerWidth;
         const newFontSize = (targetWidth / 80) * (100 / pixelsPerChar);
@@ -197,7 +242,7 @@
         this.dotCount = 0;
         if (this.dotInterval) clearInterval(this.dotInterval);
         this.dotInterval = setInterval(() => {
-          this.dotCount = (this.dotCount + 1) % 2;
+          this.dotCount = (this.dotCount + 1) % 4; // 0,1,2,3
           this.render();
         }, 1000);
       }
@@ -235,7 +280,6 @@
         if (this.stack.length > 0) fullProbe += this.stack.join('\n') + '\n';
         fullProbe += probe;
 
-        this.startWait();
         try {
           const response = await fetch(`${this.localBackend}/generate_prompt`, {
             method: 'POST',
@@ -257,25 +301,60 @@
             const { done, value } = await reader.read();
             if (done) break;
             fullResponse += new TextDecoder().decode(value);
-            this.stack.push(`1:\n${fullResponse}`);
+            this.stack[this.stack.length - 1] = `1:\n${fullResponse}`; // update last line live
             this.render();
           }
-          this.currentStructure.addResponse(fullResponse);
-          this.stopWait();
           return fullResponse;
         } catch (e) {
-          this.stopWait();
           return `[ERROR] ${e.message}`;
         }
       }
 
       handleRecover() {
-        if (this.structures.length > 0 || this.stack.length > 0) {
-          // simple recover: pop last response/initiation if possible
-          if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('1:\n')) {
-            this.stack.pop();
+        if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('1:\n')) {
+          this.stack.pop();
+        }
+        this.render();
+      }
+
+      normalizeInput() {
+        const selection = window.getSelection();
+        let cursorOffset = 0;
+
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const preCaretRange = range.cloneRange();
+          preCaretRange.selectNodeContents(this.input);
+          preCaretRange.setEnd(range.endContainer, range.endOffset);
+          cursorOffset = preCaretRange.toString().length;
+        }
+
+        const textContent = this.input.textContent;
+
+        this.input.innerHTML = '';
+        if (textContent) {
+          const span = document.createElement('span');
+          span.className = 'input-reverse';
+          span.textContent = textContent;
+          this.input.appendChild(span);
+
+          try {
+            const range = document.createRange();
+            const textNode = span.firstChild;
+            if (textNode) {
+              const offset = Math.min(cursorOffset, textNode.length);
+              range.setStart(textNode, offset);
+              range.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            }
+          } catch (e) {
+            const range = document.createRange();
+            range.selectNodeContents(this.input);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
           }
-          this.render();
         }
       }
 
@@ -292,7 +371,12 @@
         if (this.stack.length > 0) output += this.formatStack() + '\n';
 
         if (this.state === State.PROBE_WAIT) {
-          output += `Thinking${this.dotCount === 1 ? '.' : ''}`;
+          let dots = '';
+          if (this.dotCount === 0) dots = '';
+          else if (this.dotCount === 1) dots = '.';
+          else if (this.dotCount === 2) dots = '..';
+          else if (this.dotCount === 3) dots = '...';
+          output += `Thinking${dots}`;
         }
 
         this.display.innerHTML = output;
