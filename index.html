@@ -85,21 +85,6 @@
       background: #BDCEF1;
       color: #181818;
     }
-    .config-line {
-      margin-bottom: 0.5em;
-    }
-    .config-label {
-      color: #888;
-    }
-    .config-value {
-      color: #BDCEF1;
-      background: #222;
-      padding: 0 0.5ch;
-      cursor: text;
-    }
-    .message-separator {
-      height: 1em;
-    }
   </style>
 </head>
 <body>
@@ -112,7 +97,6 @@
     <div id="display"></div>
     <div id="input" contenteditable="true"></div>
   </div>
-  <span id="measure">M</span>
 
   <script>
     const State = {
@@ -160,17 +144,12 @@
         this.currentStructure = new Structure();
         this.stack = [];
         this.localBackend = 'https://researchnexus.onrender.com';
-        this.modelEndpoint = 'http://api.x.ai';     // HARDCODED
-        this.model = 'grok-3';                      // HARDCODED
+        this.modelEndpoint = 'https://api.x.ai';  // HARDCODED
+        this.model = 'grok-3';                    // HARDCODED
         this.apiKey = '';
         this.truth = true;
         this.display = document.getElementById('display');
         this.input = document.getElementById('input');
-        this.measure = document.getElementById('measure');
-        this.backdoorMode = false;
-        this.allowDragAndDrop = true;
-        this.lastInitiation = null;
-        this.lastActionWasFileDrop = false;
         this.setupEvents();
         this.updateDimensions();
       }
@@ -228,28 +207,6 @@
             }
           } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
             return;
-          } else {
-            return;
-          }
-        });
-
-        document.addEventListener('dragover', (e) => {
-          if (this.allowDragAndDrop) e.preventDefault();
-        });
-        document.addEventListener('drop', async (e) => {
-          if (!this.allowDragAndDrop) return;
-          e.preventDefault();
-          const file = e.dataTransfer.files[0];
-          if (file && file.type === 'application/json' && this.structures.length < 99) {
-            const text = await file.text();
-            try {
-              const structure = JSON.parse(text);
-              if (this.isValidStructure(structure)) {
-                this.structures.push(structure);
-                this.lastActionWasFileDrop = true;
-                this.render();
-              }
-            } catch (error) {}
           }
         });
 
@@ -281,13 +238,9 @@
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
             const value = e.target.textContent.trim();
-            if (id === 'edit-endpoint') {
-              this.modelEndpoint = value;
-            } else if (id === 'edit-model') {
-              this.model = value;
-            } else if (id === 'edit-key') {
-              this.apiKey = value;
-            }
+            if (id === 'edit-endpoint') this.modelEndpoint = value;
+            if (id === 'edit-model') this.model = value;
+            if (id === 'edit-key') this.apiKey = value;
           }
         }, true);
 
@@ -295,33 +248,16 @@
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
             const value = e.target.textContent.trim();
-            if (id === 'edit-endpoint') {
-              this.modelEndpoint = value;
-            } else if (id === 'edit-model') {
-              this.model = value;
-            } else if (id === 'edit-key') {
-              this.apiKey = value;
-            }
+            if (id === 'edit-endpoint') this.modelEndpoint = value;
+            if (id === 'edit-model') this.model = value;
+            if (id === 'edit-key') this.apiKey = value;
           }
         });
-      }
-
-      isValidStructure(s) {
-        if (typeof s !== 'object' || s === null) return false;
-        if (typeof s.id !== 'string' || typeof s.date !== 'string' || typeof s.day !== 'string') return false;
-        if (s.releaseTime !== null && typeof s.releaseTime !== 'string') return false;
-        if (!Array.isArray(s.log)) return false;
-        for (const entry of s.log) {
-          if (typeof entry.type !== 'string' || (entry.type !== 'initiation' && entry.type !== 'response')) return false;
-          if (typeof entry.id !== 'string' || typeof entry.timestamp !== 'number' || typeof entry.probe !== 'string') return false;
-        }
-        return true;
       }
 
       normalizeInput() {
         const selection = window.getSelection();
         let cursorOffset = 0;
-
         if (selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           const preCaretRange = range.cloneRange();
@@ -331,28 +267,18 @@
         }
 
         const textContent = this.input.textContent;
-
         this.input.innerHTML = '';
         if (textContent) {
           const span = document.createElement('span');
           span.className = 'input-reverse';
           span.textContent = textContent;
           this.input.appendChild(span);
-
-          try {
-            const range = document.createRange();
-            const textNode = span.firstChild;
-            if (textNode) {
-              const offset = Math.min(cursorOffset, textNode.length);
-              range.setStart(textNode, offset);
-              range.collapse(true);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-          } catch (e) {
-            const range = document.createRange();
-            range.selectNodeContents(this.input);
-            range.collapse(false);
+          const range = document.createRange();
+          const textNode = span.firstChild;
+          if (textNode) {
+            const offset = Math.min(cursorOffset, textNode.length);
+            range.setStart(textNode, offset);
+            range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
           }
@@ -387,9 +313,9 @@
           if (line.startsWith('user:\n')) {
             const probe = line.slice('user:\n'.length);
             return '<span class="reverse-video">user:\n' + probe + '</span><div class="message-separator"></div>';
-          } else if (line.startsWith('llm:')) {
-            const response = line.slice('llm:'.length);
-            return 'llm:' + response + '<div class="message-separator"></div>';
+          } else if (line.startsWith('llm:\n')) {
+            const response = line.slice('llm:\n'.length);
+            return 'llm:\n' + response + '<div class="message-separator"></div>';
           }
           return line;
         }).join('');
@@ -400,19 +326,13 @@
         if (this.structures.length > 0) {
           for (const structure of this.structures) {
             for (const entry of structure.log) {
-              if (entry.type === 'initiation') {
-                fullProbe += `user:\n${entry.probe}\n`;
-              } else if (entry.type === 'response') {
-                fullProbe += `llm:\n${entry.probe}\n`;
-              }
+              if (entry.type === 'initiation') fullProbe += `user:\n${entry.probe}\n`;
+              else if (entry.type === 'response') fullProbe += `llm:\n${entry.probe}\n`;
             }
           }
         }
         
-        if (this.stack.length > 0) {
-          fullProbe += this.stack.join('');
-        }
-        
+        if (this.stack.length > 0) fullProbe += this.stack.join('');
         fullProbe += probe;
         
         try {
@@ -435,27 +355,25 @@
 
           const reader = response.body.getReader();
           let fullResponse = '';
+          let liveResponse = '';
 
-          let isFirstChunk = true;
+          this.stack.push('llm:\n');
+          this.render();
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             const chunk = new TextDecoder().decode(value);
+            liveResponse += chunk;
             fullResponse += chunk;
 
-            if (isFirstChunk) {
-              this.stack.push(`llm:${fullResponse}`);
-              isFirstChunk = false;
-            } else {
-              this.stack[this.stack.length - 1] = `llm:${fullResponse}`;
-            }
-
+            this.stack[this.stack.length - 1] = `llm:\n${liveResponse}`;
             this.render();
           }
 
           this.currentStructure.addResponse(fullResponse);
+          this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
 
           return fullResponse;
         } catch (e) {
@@ -464,25 +382,10 @@
       }
 
       render() {
-        const endpointEl = document.getElementById('edit-endpoint');
-        const modelEl = document.getElementById('edit-model');
-        const keyEl = document.getElementById('edit-key');
-        
-        if (endpointEl && endpointEl.textContent.trim() !== 'NULL') {
-          this.modelEndpoint = endpointEl.textContent.trim();
-        }
-        if (modelEl && modelEl.textContent.trim() !== 'NULL') {
-          this.model = modelEl.textContent.trim();
-        }
-        if (keyEl && keyEl.textContent.trim() !== 'NULL') {
-          this.apiKey = keyEl.textContent.trim();
-        }
-
         let output = '';
         const structures = this.formatStructures();
-        let blockInput = false;
 
-        output += 'endpoint: <span id="edit-endpoint" class="config-value" contenteditable="true">' + (this.modelEndpoint || 'http://api.x.ai') + '</span>\n';
+        output += 'endpoint: <span id="edit-endpoint" class="config-value" contenteditable="true">' + (this.modelEndpoint || 'https://api.x.ai') + '</span>\n';
         output += 'model: <span id="edit-model" class="config-value" contenteditable="true">' + (this.model || 'grok-3') + '</span>\n';
         output += 'key: <span id="edit-key" class="config-value" contenteditable="true">' + (this.apiKey || 'NULL') + '</span>\n\n';
 
@@ -495,7 +398,6 @@
           case State.PROBE_WAIT:
             if (structures) output += structures + '\n';
             output += this.formatStack();
-            output += '<span class="reverse-video">user:\n' + (this.currentProbe || '') + '</span>\n';
             blockInput = true;
             break;
           case State.PROBE_RECOVER_CONFIRM:
@@ -508,7 +410,7 @@
             if (this.stack.length > 0) output += this.formatStack();
             break;
           case State.CALIBRATE_ENDPOINT_RECOVER:
-            output += '/route\n<span class="reverse-video">endpoint: ' + (this.modelEndpoint || 'http://api.x.ai') + '</span>';
+            output += '/route\n<span class="reverse-video">endpoint: ' + (this.modelEndpoint || 'https://api.x.ai') + '</span>';
             break;
           case State.CALIBRATE_MODEL_RECOVER:
             output += '/route\n<span class="reverse-video">model: ' + (this.model || 'grok-3') + '</span>';
@@ -581,7 +483,7 @@
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === 'y') {
               if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
-                if (this.stack[this.stack.length - 1].startsWith('llm:')) {
+                if (this.stack[this.stack.length - 1].startsWith('llm:\n')) {
                   this.stack.pop();
                 }
                 if (this.currentStructure.log[this.currentStructure.log.length - 1].type === 'response') {
