@@ -69,8 +69,6 @@
       PROBE_RECOVER_EDIT: 'probe_recover_edit',
       CALIBRATE_ENDPOINT_RECOVER: 'calibrate_endpoint_recover',
       CALIBRATE_MODEL_RECOVER: 'calibrate_model_recover',
-      CALIBRATE_INTRO_RECOVER: 'calibrate_intro_recover',
-      CALIBRATE_OUTRO_RECOVER: 'calibrate_outro_recover',
       CALIBRATE_WAIT: 'calibrate_wait',
     };
 
@@ -110,8 +108,6 @@
         this.modelEndpoint = 'http://localhost:11434/api/generate';
         this.model = 'gpt-oss:120b-cloud';
         this.truth = true;
-        this.intro = '';
-        this.outro = '';
         this.dotCount = 0;
         this.dotInterval = null;
         this.display = document.getElementById('display');
@@ -333,15 +329,13 @@
             body: JSON.stringify({
                 probe: fullProbe,
                 truth: this.truth,
-                intro: this.intro,
-                outro: this.outro,
                 model: this.model
             })
           });
           const data = await response.json();
           return data.response || `[ERROR: Local backend response missing 'response' field.]`;
         } catch (e) {
-          return `[ERROR: Local backend communication failed. Check if backend.py is running on port 8000.]`;
+          return `[ERROR: Local backend communication failed. Check if backend is running.]`;
         }
       }
 
@@ -356,7 +350,7 @@
         }
         let blockInput = false;
 
-        const commandList = `/endpoint /model /release /recover /intro /outro /polarity : ${this.truth ? '1' : '0'}\n`;
+        const commandList = `/endpoint /model /release /recover /polarity : ${this.truth ? '1' : '0'}\n`;
 
         switch(this.state) {
 
@@ -393,12 +387,6 @@
             break;
           case State.CALIBRATE_MODEL_RECOVER:
             output = `/route\n<span class="reverse-video">model: ${this.model || 'NULL'}</span>`;
-            break;
-          case State.CALIBRATE_INTRO_RECOVER:
-            output = `/route\n<span class="reverse-video">intro: ${this.intro || 'NULL'}</span>`;
-            break;
-          case State.CALIBRATE_OUTRO_RECOVER:
-            output = `/route\n<span class="reverse-video">outro: ${this.outro || 'NULL'}</span>`;
             break;
           case State.CALIBRATE_WAIT:
             output = dots;
@@ -454,10 +442,6 @@
               this.state = State.CALIBRATE_ENDPOINT_RECOVER;
             } else if (cmdLower === '/model') {
               this.state = State.CALIBRATE_MODEL_RECOVER;
-            } else if (cmdLower === '/intro') {
-              this.state = State.CALIBRATE_INTRO_RECOVER;
-            } else if (cmdLower === '/outro') {
-              this.state = State.CALIBRATE_OUTRO_RECOVER;
             } else if (cmdLower.startsWith('/')) {
               return;
             } else {
@@ -525,12 +509,6 @@
             } else if (cmdLower === '/model') {
               this.lastInitiation = null;
               this.state = State.CALIBRATE_MODEL_RECOVER;
-            } else if (cmdLower === '/intro') {
-              this.lastInitiation = null;
-              this.state = State.CALIBRATE_INTRO_RECOVER;
-            } else if (cmdLower === '/outro') {
-              this.lastInitiation = null;
-              this.state = State.CALIBRATE_OUTRO_RECOVER;
             } else if (cmdLower.startsWith('/')) {
               return;
             } else {
@@ -580,33 +558,9 @@
               }, 3000);
             }
             break;
-          case State.CALIBRATE_INTRO_RECOVER:
-            if (cmdLower === '/route') {
-              this.state = State.PROBE_RECOVER;
-            } else {
-              this.intro = cmd;
-              this.state = State.CALIBRATE_WAIT;
-              this.startWait();
-              setTimeout(() => {
-                this.stopWait();
-                this.state = State.PROBE_RECOVER;
-                this.render();
-              }, 3000);
-            }
-            break;
-          case State.CALIBRATE_OUTRO_RECOVER:
-            if (cmdLower === '/route') {
-              this.state = State.PROBE_RECOVER;
-            } else {
-              this.outro = cmd;
-              this.state = State.CALIBRATE_WAIT;
-              this.startWait();
-              setTimeout(() => {
-                this.stopWait();
-                this.state = State.PROBE_RECOVER;
-                this.render();
-              }, 3000);
-            }
+          case State.CALIBRATE_WAIT:
+            output = dots;
+            blockInput = true;
             break;
         }
         this.render();
