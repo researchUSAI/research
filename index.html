@@ -166,6 +166,7 @@
         this.truth = true;
         this.dotCount = 0;
         this.dotInterval = null;
+        this.isStreaming = false; // NEW FLAG: controls when dots show
         this.display = document.getElementById('display');
         this.input = document.getElementById('input');
         this.measure = document.getElementById('measure');
@@ -456,10 +457,11 @@
           let fullResponse = '';
           let liveResponse = '';
 
-          // Place one single entry that we will update in place
+          this.isStreaming = false;
           this.stack.push('llm:\n');
-          this.render();
+          this.render(); // shows "llm:" with dots (pre-stream wait)
 
+          this.isStreaming = true;
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -468,19 +470,17 @@
             liveResponse += chunk;
             fullResponse += chunk;
 
-            // Update the last entry in place
             this.stack[this.stack.length - 1] = `llm:\n${liveResponse}`;
             this.render();
           }
 
-          // Final save — exactly once
+          this.isStreaming = false;
           this.currentStructure.addResponse(fullResponse);
-
-          // Finalize the stack entry
           this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
 
           return fullResponse;
         } catch (e) {
+          this.isStreaming = false;
           return `[ERROR: ${e.message || 'Network failure'}]`;
         }
       }
@@ -526,7 +526,12 @@
             } else {
               output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
             }
-            output += 'llm:\n' + dots;
+            // Dots only during REAL wait (before streaming starts)
+            if (!this.isStreaming) {
+              output += 'llm:\n' + dots;
+            } else {
+              output += 'llm:\n'; // no dots while typing
+            }
             blockInput = true;
             break;
           case State.PROBE_RECOVER_CONFIRM:
@@ -602,8 +607,8 @@
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
               this.stopWait();
-              this.currentStructure.addResponse(response);
               this.state = State.PROBE_RECOVER_RESPONSE;
+              this.currentStructure.addResponse(response);
               this.lastInitiation = null;
             }
             break;
@@ -674,8 +679,8 @@
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
               this.stopWait();
-              this.currentStructure.addResponse(response);
               this.state = State.PROBE_RECOVER_RESPONSE;
+              this.currentStructure.addResponse(response);
               this.lastInitiation = null;
             }
             break;
