@@ -105,7 +105,7 @@
   <div id="toolbar">
     <button id="export-btn">Export</button>
     <button id="back-btn">Back</button>
-    <button id="polarity-btn">Truth Mode</button>
+    <button id="polarity-btn">Short</button>
   </div>
   <div id="display-container">
     <div id="display"></div>
@@ -275,7 +275,7 @@
 
         document.getElementById('polarity-btn').addEventListener('click', () => {
           this.truth = !this.truth;
-          document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
+          document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
           this.render();
         });
 
@@ -547,7 +547,7 @@
               }
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
               this.state = State.CALIBRATE_ENDPOINT_RECOVER;
@@ -614,7 +614,7 @@
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Truth Mode' : 'Exploration Mode';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
               this.lastInitiation = null;
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
