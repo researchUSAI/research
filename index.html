@@ -443,7 +443,6 @@
             if (done) break;
             const chunk = new TextDecoder().decode(value);
             fullResponse += chunk;
-            // Replace previous llm line with updated response + double space
             if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('llm:\n')) {
               this.stack.pop();
             }
