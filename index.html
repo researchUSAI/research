@@ -164,9 +164,6 @@
         this.model = '';
         this.apiKey = '';
         this.truth = true;
-        this.dotCount = 0;
-        this.dotInterval = null;
-        this.isStreaming = false; // NEW FLAG: controls when dots show
         this.display = document.getElementById('display');
         this.input = document.getElementById('input');
         this.measure = document.getElementById('measure');
@@ -373,23 +370,6 @@
         document.body.style.lineHeight = `${newLineHeight}px`;
       }
 
-      startWait() {
-        this.dotCount = 0;
-        if (this.dotInterval) clearInterval(this.dotInterval);
-        this.dotInterval = setInterval(() => {
-          this.dotCount = (this.dotCount + 1) % 4;
-          this.render();
-        }, 1000);
-      }
-
-      stopWait() {
-        if (this.dotInterval) {
-          clearInterval(this.dotInterval);
-          this.dotInterval = null;
-        }
-        this.dotCount = 0;
-      }
-
       scrollToBottom() {
         this.display.scrollTop = this.display.scrollHeight;
       }
@@ -457,11 +437,9 @@
           let fullResponse = '';
           let liveResponse = '';
 
-          this.isStreaming = false;
           this.stack.push('llm:\n');
-          this.render(); // shows "llm:" with dots (pre-stream wait)
+          this.render();  // show header immediately
 
-          this.isStreaming = true;
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -474,13 +452,11 @@
             this.render();
           }
 
-          this.isStreaming = false;
           this.currentStructure.addResponse(fullResponse);
           this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
 
           return fullResponse;
         } catch (e) {
-          this.isStreaming = false;
           return `[ERROR: ${e.message || 'Network failure'}]`;
         }
       }
@@ -502,11 +478,6 @@
 
         let output = '';
         const structures = this.formatStructures();
-        let dots = '';
-        if (this.dotCount === 0) dots = '.';
-        else if (this.dotCount === 1) dots = '..';
-        else if (this.dotCount === 2) dots = '...';
-        else dots = '';
         let blockInput = false;
 
         output += 'endpoint: <span id="edit-endpoint" class="config-value" contenteditable="true">' + (this.modelEndpoint || 'NULL') + '</span>\n';
@@ -526,12 +497,7 @@
             } else {
               output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
             }
-            // Dots only during REAL wait (before streaming starts)
-            if (!this.isStreaming) {
-              output += 'llm:\n' + dots;
-            } else {
-              output += 'llm:\n'; // no dots while typing
-            }
+            output += 'llm:\n';  // no dots, just header while waiting/streaming
             blockInput = true;
             break;
           case State.PROBE_RECOVER_CONFIRM:
@@ -553,7 +519,7 @@
             output += '/route\n<span class="reverse-video">key: ' + (this.apiKey || 'NULL') + '</span>';
             break;
           case State.CALIBRATE_WAIT:
-            output += dots;
+            output += 'processing...';  // minimal placeholder, no animation
             blockInput = true;
             break;
         }
@@ -603,10 +569,8 @@
               this.currentStructure.addInitiation(cmd);
               this.lastActionWasFileDrop = false;
               this.state = State.PROBE_WAIT;
-              this.startWait();
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
-              this.stopWait();
               this.state = State.PROBE_RECOVER_RESPONSE;
               this.currentStructure.addResponse(response);
               this.lastInitiation = null;
@@ -675,10 +639,8 @@
               }
               this.lastActionWasFileDrop = false;
               this.state = State.PROBE_WAIT;
-              this.startWait();
               this.currentProbe = cmd;
               const response = await this.coordinate(cmd);
-              this.stopWait();
               this.state = State.PROBE_RECOVER_RESPONSE;
               this.currentStructure.addResponse(response);
               this.lastInitiation = null;
@@ -692,9 +654,7 @@
               this.modelEndpoint = cmd;
               this.backdoorMode = (cmd === 'backdoor');
               this.state = State.CALIBRATE_WAIT;
-              this.startWait();
               setTimeout(() => {
-                this.stopWait();
                 this.state = State.PROBE_RECOVER;
                 this.render();
               }, 3000);
@@ -707,9 +667,7 @@
             } else {
               this.model = cmd;
               this.state = State.CALIBRATE_WAIT;
-              this.startWait();
               setTimeout(() => {
-                this.stopWait();
                 this.state = State.PROBE_RECOVER;
                 this.render();
               }, 3000);
@@ -722,9 +680,7 @@
             } else {
               this.apiKey = cmd;
               this.state = State.CALIBRATE_WAIT;
-              this.startWait();
               setTimeout(() => {
-                this.stopWait();
                 this.state = State.PROBE_RECOVER;
                 this.render();
               }, 3000);
