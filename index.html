@@ -255,7 +255,6 @@
           }
         });
 
-        // Toolbar buttons
         document.getElementById('export-btn').addEventListener('click', () => {
           if (this.currentStructure) {
             this.currentStructure.release();
@@ -280,7 +279,6 @@
           this.render();
         });
 
-        // Edit listener for fields - save current values FROM the display BEFORE render wipes them
         this.display.addEventListener('blur', (e) => {
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
@@ -295,7 +293,6 @@
           }
         }, true);
 
-        // ALSO save on input for real-time updates
         this.display.addEventListener('input', (e) => {
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
@@ -457,20 +454,31 @@
 
           const reader = response.body.getReader();
           let fullResponse = '';
+          let liveResponse = '';
+
+          // Place one single entry that we will update in place
+          this.stack.push('llm:\n');
+          this.render();
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+
             const chunk = new TextDecoder().decode(value);
+            liveResponse += chunk;
             fullResponse += chunk;
-            if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('llm:\n')) {
-              this.stack.pop();
-            }
-            this.stack.push(`llm:\n${fullResponse}`);
+
+            // Update the last entry in place (no pop/push spam)
+            this.stack[this.stack.length - 1] = `llm:\n${liveResponse}`;
             this.render();
           }
 
+          // Final save — exactly once
           this.currentStructure.addResponse(fullResponse);
+
+          // Make sure the final stack entry is clean
+          this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
+
           return fullResponse;
         } catch (e) {
           return `[ERROR: ${e.message || 'Network failure'}]`;
@@ -478,7 +486,6 @@
       }
 
       render() {
-        // CRITICAL: Save current config field values BEFORE wiping the display
         const endpointEl = document.getElementById('edit-endpoint');
         const modelEl = document.getElementById('edit-model');
         const keyEl = document.getElementById('edit-key');
