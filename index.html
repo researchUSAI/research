@@ -21,8 +21,8 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
-    #display, #input {
-      flex: 0 0 auto;
+    #display {
+      flex: 1 1 auto;
       white-space: pre-wrap;
       word-break: break-all;
       overflow-wrap: anywhere;
@@ -31,6 +31,7 @@
       line-height: 1;
     }
     #input {
+      flex: 0 0 auto;
       display: block;
       border: none;
       outline: none;
@@ -38,8 +39,55 @@
       color: inherit;
       font-family: inherit;
       font-size: inherit;
+      min-height: 3em;
+      padding: 0 1ch;
     }
     #input .input-reverse {
+      background: #BDCEF1;
+      color: #181818;
+    }
+    #controls {
+      flex: 0 0 auto;
+      padding: 1ch;
+      display: flex;
+      gap: 1ch;
+      background: #111;
+      border-top: 1px solid #333;
+      justify-content: center;
+    }
+    button {
+      background: #333;
+      color: #BDCEF1;
+      border: 1px solid #555;
+      padding: 0.5ch 1ch;
+      font-family: inherit;
+      cursor: pointer;
+      min-width: 90px;
+    }
+    button:hover {
+      background: #444;
+    }
+    button.polarity-truth {
+      background: #006600;
+    }
+    button.polarity-exploration {
+      background: #660000;
+    }
+    .config-line {
+      margin-bottom: 0.5em;
+    }
+    .config-label {
+      color: #888;
+    }
+    .config-value {
+      color: #BDCEF1;
+      background: #222;
+      padding: 0 0.5ch;
+      cursor: text;
+      display: inline-block;
+      min-width: 20ch;
+    }
+    .reverse-video {
       background: #BDCEF1;
       color: #181818;
     }
@@ -49,27 +97,24 @@
       font-family: 'Courier New', monospace;
       white-space: pre;
     }
-    .reverse-video {
-      background: #BDCEF1;
-      color: #181818;
-    }
   </style>
 </head>
 <body>
   <div id="display"></div>
   <div id="input" contenteditable="true"></div>
+
+  <div id="controls">
+    <button id="export-btn">Export</button>
+    <button id="back-btn">Back</button>
+    <button id="polarity-btn">Polarity: <span id="polarity-text">Truth</span></button>
+  </div>
+
   <span id="measure">M</span>
+
   <script>
     const State = {
-      PROBE_RECOVER: 'probe_recover',
-      PROBE_RELEASE: 'probe_release',
       PROBE_WAIT: 'probe_wait',
       PROBE_RECOVER_RESPONSE: 'probe_recover_response',
-      PROBE_RECOVER_CONFIRM: 'probe_recover_confirm',
-      PROBE_RECOVER_EDIT: 'probe_recover_edit',
-      CALIBRATE_ENDPOINT_RECOVER: 'calibrate_endpoint_recover',
-      CALIBRATE_MODEL_RECOVER: 'calibrate_model_recover',
-      CALIBRATE_WAIT: 'calibrate_wait',
     };
 
     class Structure {
@@ -100,13 +145,13 @@
 
     class Nexus {
       constructor() {
-        this.state = State.PROBE_RECOVER;
+        this.state = State.PROBE_RECOVER_RESPONSE;
         this.structures = [];
         this.currentStructure = new Structure();
         this.stack = [];
-        this.localBackend = 'https://researchnexus.onrender.com';  // update to your real Render URL for deployment
-        this.modelEndpoint = 'http://localhost:11434/api/generate';
-        this.model = 'gpt-oss:120b-cloud';
+        this.localBackend = 'https://researchnexus.onrender.com';
+        this.modelEndpoint = 'https://api.groq.com/openai/v1';
+        this.model = 'llama-3.1-70b-versatile';
         this.apiKey = '';
         this.truth = true;
         this.dotCount = 0;
@@ -114,12 +159,10 @@
         this.display = document.getElementById('display');
         this.input = document.getElementById('input');
         this.measure = document.getElementById('measure');
-        this.backdoorMode = false;
-        this.allowDragAndDrop = true;
-        this.lastInitiation = null;
-        this.lastActionWasFileDrop = false;
+        this.polarityText = document.getElementById('polarity-text');
         this.setupEvents();
         this.updateDimensions();
+        this.updatePolarityDisplay();
       }
 
       setupEvents() {
@@ -130,87 +173,158 @@
         });
 
         document.addEventListener('keydown', async (e) => {
-          if (e.key === 'Enter' && e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            document.execCommand('insertText', false, ' '.repeat(80));
-          } else if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            const cmd = this.input.textContent.trim();
-            this.input.innerHTML = '';
-            if (cmd) await this.process(cmd);
-          } else if ((e.metaKey || e.ctrlKey) && (e.key === 'c' || e.key === 'C')) {
-            e.preventDefault();
-            const selection = window.getSelection();
-            const text = selection.toString() || this.input.textContent;
-            navigator.clipboard.writeText(text).catch(() => {});
-          } else if ((e.metaKey || e.ctrlKey) && (e.key === 'v' || e.key === 'V')) {
-            e.preventDefault();
-            navigator.clipboard.readText().then(text => {
-              const selection = window.getSelection();
-              const span = document.createElement('span');
-              span.className = 'input-reverse';
-              span.textContent = text;
-              if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                range.deleteContents();
-                range.insertNode(span);
-              } else {
-                this.input.appendChild(span);
-              }
-              const range = document.createRange();
-              range.setStartAfter(span);
-              range.collapse(true);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }).catch(() => {});
-          } else if ((e.metaKey || e.ctrlKey) && (e.key === 'x' || e.key === 'X')) {
-            e.preventDefault();
-            const selection = window.getSelection();
-            const text = selection.toString() || this.input.textContent;
-            navigator.clipboard.writeText(text).catch(() => {});
-            if (selection.rangeCount > 0) {
-              selection.getRangeAt(0).deleteContents();
-            } else {
+            const probe = this.input.textContent.trim();
+            if (probe) {
               this.input.innerHTML = '';
+              await this.sendProbe(probe);
             }
-          } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-            return;
-          } else {
-            return;
           }
         });
 
-        document.addEventListener('dragover', (e) => {
-          if (this.allowDragAndDrop) e.preventDefault();
-        });
-        document.addEventListener('drop', async (e) => {
-          if (!this.allowDragAndDrop) return;
-          e.preventDefault();
-          const file = e.dataTransfer.files[0];
-          if (file && file.type === 'application/json' && this.structures.length < 99) {
-            const text = await file.text();
-            try {
-              const structure = JSON.parse(text);
-              if (this.isValidStructure(structure)) {
-                this.structures.push(structure);
-                this.lastActionWasFileDrop = true;
-                this.render();
-              }
-            } catch (error) {}
+        // Editable fields
+        this.display.addEventListener('input', (e) => {
+          if (e.target.classList.contains('config-value')) {
+            const id = e.target.id;
+            const value = e.target.textContent.trim();
+            if (id === 'edit-endpoint') this.modelEndpoint = value;
+            if (id === 'edit-model') this.model = value;
+            if (id === 'edit-key') this.apiKey = value;
           }
+        });
+
+        // Buttons
+        document.getElementById('export-btn').addEventListener('click', () => {
+          if (this.currentStructure) this.currentStructure.release();
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+          if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('1:\n')) {
+            this.stack.pop();
+          }
+          this.render();
+        });
+
+        document.getElementById('polarity-btn').addEventListener('click', () => {
+          this.truth = !this.truth;
+          this.updatePolarityDisplay();
+          this.render();
         });
       }
 
-      isValidStructure(s) {
-        if (typeof s !== 'object' || s === null) return false;
-        if (typeof s.id !== 'string' || typeof s.date !== 'string' || typeof s.day !== 'string') return false;
-        if (s.releaseTime !== null && typeof s.releaseTime !== 'string') return false;
-        if (!Array.isArray(s.log)) return false;
-        for (const entry of s.log) {
-          if (typeof entry.type !== 'string' || (entry.type !== 'initiation' && entry.type !== 'response')) return false;
-          if (typeof entry.id !== 'string' || typeof entry.timestamp !== 'number' || typeof entry.probe !== 'string') return false;
+      async sendProbe(probe) {
+        this.stack.push(`0:\n${probe}`);
+        this.currentStructure.addInitiation(probe);
+        this.state = State.PROBE_WAIT;
+        this.startWait();
+        this.render();
+
+        const response = await this.coordinate(probe);
+        this.stopWait();
+        this.stack.push(`1:\n${response}`);
+        this.currentStructure.addResponse(response);
+        this.state = State.PROBE_RECOVER_RESPONSE;
+        this.render();
+      }
+
+      updatePolarityDisplay() {
+        this.polarityText.textContent = this.truth ? 'Truth' : 'Exploration';
+        document.getElementById('polarity-btn').className = this.truth ? 'polarity-truth' : 'polarity-exploration';
+      }
+
+      updateDimensions() {
+        this.measure.style.fontSize = '100px';
+        const measuredWidth = this.measure.offsetWidth;
+        const pixelsPerChar = measuredWidth / 1;
+        const targetWidth = window.innerWidth;
+        const newFontSize = (targetWidth / 80) * (100 / pixelsPerChar);
+        const newLineHeight = window.innerHeight / 24;
+        document.body.style.fontSize = `${newFontSize}px`;
+        document.body.style.lineHeight = `${newLineHeight}px`;
+      }
+
+      startWait() {
+        this.dotCount = 0;
+        if (this.dotInterval) clearInterval(this.dotInterval);
+        this.dotInterval = setInterval(() => {
+          this.dotCount = (this.dotCount + 1) % 4;
+          this.render();
+        }, 800); // slightly faster cycle
+      }
+
+      stopWait() {
+        if (this.dotInterval) clearInterval(this.dotInterval);
+        this.dotInterval = null;
+        this.dotCount = 0;
+      }
+
+      async coordinate(probe) {
+        let fullProbe = '';
+        if (this.structures.length > 0) {
+          for (const structure of this.structures) {
+            for (const entry of structure.log) {
+              fullProbe += entry.type === 'initiation' ? `0:\n${entry.probe}\n` : `1:\n${entry.probe}\n`;
+            }
+          }
         }
-        return true;
+        if (this.stack.length > 0) fullProbe += this.stack.join('\n') + '\n';
+        fullProbe += probe;
+
+        try {
+          const response = await fetch(`${this.localBackend}/generate_prompt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              probe: fullProbe,
+              truth: this.truth,
+              base_url: this.modelEndpoint,
+              api_key: this.apiKey,
+              model: this.model
+            })
+          });
+
+          if (!response.ok) throw new Error(await response.text());
+
+          const reader = response.body.getReader();
+          let fullResponse = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullResponse += new TextDecoder().decode(value);
+            // Update last stack entry live for streaming effect
+            if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('1:\n')) {
+              this.stack[this.stack.length - 1] = `1:\n${fullResponse}`;
+            } else {
+              this.stack.push(`1:\n${fullResponse}`);
+            }
+            this.render();
+          }
+          return fullResponse;
+        } catch (e) {
+          return `[ERROR] ${e.message}`;
+        }
+      }
+
+      render() {
+        let output = `
+          <div class="config-line"><span class="config-label">endpoint:</span> <span id="edit-endpoint" class="config-value" contenteditable="true">${this.modelEndpoint || 'NULL'}</span></div>
+          <div class="config-line"><span class="config-label">model:</span> <span id="edit-model" class="config-value" contenteditable="true">${this.model || 'NULL'}</span></div>
+          <div class="config-line"><span class="config-label">key:</span> <span id="edit-key" class="config-value" contenteditable="true">${this.apiKey ? '••••••••' : 'NULL'}</span></div>
+        `;
+
+        if (this.stack.length > 0) output += this.stack.join('\n') + '\n';
+
+        if (this.state === State.PROBE_WAIT) {
+          let dots = '';
+          if (this.dotCount === 1) dots = '.';
+          else if (this.dotCount === 2) dots = '..';
+          else if (this.dotCount === 3) dots = '...';
+          output += `Thinking${dots}`;
+        }
+
+        this.display.innerHTML = output;
+        this.input.focus();
       }
 
       normalizeInput() {
@@ -252,324 +366,6 @@
             selection.addRange(range);
           }
         }
-      }
-
-      updateDimensions() {
-        this.measure.style.fontSize = '100px';
-        const measuredWidth = this.measure.offsetWidth;
-        const pixelsPerChar = measuredWidth / 1;
-        const targetWidth = window.innerWidth;
-        const newFontSize = (targetWidth / 80) * (100 / pixelsPerChar);
-        const newLineHeight = window.innerHeight / 24;
-        document.body.style.fontSize = `${newFontSize}px`;
-        document.body.style.lineHeight = `${newLineHeight}px`;
-      }
-
-      startWait() {
-        this.dotCount = 0;
-        if (this.dotInterval) clearInterval(this.dotInterval);
-        this.dotInterval = setInterval(() => {
-          this.dotCount = (this.dotCount + 1) % 2;
-          this.render();
-        }, 1000);
-      }
-
-      stopWait() {
-        if (this.dotInterval) {
-          clearInterval(this.dotInterval);
-          this.dotInterval = null;
-        }
-        this.dotCount = 0;
-      }
-
-      formatStructures() {
-        if (this.structures.length === 0) return null;
-        return this.structures.map((s, i) => {
-          const preview = s.log.length > 0 ? s.log[0].probe.substring(0, 20) : 'empty';
-          return `[${i}]: [${s.date}] [${s.day}] [${s.releaseTime || 'active'}] [${preview}...]`;
-        }).join('\n');
-      }
-
-      formatStack() {
-        return this.stack.map(line => {
-          if (line.startsWith('0:\n')) {
-            const probe = line.slice('0:\n'.length);
-            return `<span class="reverse-video">0:${probe ? '\n' + probe : ''}</span>`;
-          } else if (line.startsWith('1:\n')) {
-            const response = line.slice('1:\n'.length);
-            return `1:\n${response}`;
-          }
-          return line;
-        }).join('\n');
-      }
-
-      async coordinate(probe) {
-        let fullProbe = '';
-        if (this.structures.length > 0) {
-          for (const structure of this.structures) {
-            for (const entry of structure.log) {
-              if (entry.type === 'initiation') {
-                fullProbe += `0:\n${entry.probe}\n`;
-              } else if (entry.type === 'response') {
-                fullProbe += `1:\n${entry.probe}\n`;
-              }
-            }
-          }
-        }
-        
-        if (this.stack.length > 0) {
-          fullProbe += this.stack.join('\n') + '\n';
-        }
-        
-        fullProbe += probe;
-        
-        try {
-          const response = await fetch(`${this.localBackend}/generate_prompt`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              probe: fullProbe,
-              truth: this.truth,
-              base_url: this.modelEndpoint,
-              api_key: this.apiKey,
-              model: this.model
-            })
-          });
-          if (!response.ok) {
-            const err = await response.json();
-            return `[ERROR: ${err.error || response.status}]`;
-          }
-          const data = await response.json();
-          return data.response || `[ERROR: Missing response field]`;
-        } catch (e) {
-          return `[ERROR: ${e.message || 'Backend communication failed'}]`;
-        }
-      }
-
-      render() {
-        let output = '';
-        const structures = this.formatStructures();
-        const configOutput = `endpoint: <span class="reverse-video">${this.modelEndpoint || 'NULL'}</span>\nmodel: <span class="reverse-video">${this.model || 'NULL'}</span>\n`;
-
-        let dots = ' ';
-        if (this.dotCount === 1) {
-          dots = '0';
-        }
-        let blockInput = false;
-
-        const commandList = `/endpoint /model /release /recover /polarity : ${this.truth ? '1' : '0'}\n`;
-
-        switch(this.state) {
-
-          case State.PROBE_RECOVER:
-          case State.PROBE_RECOVER_RESPONSE:
-            output = configOutput + commandList;
-            if (structures) output += `${structures}\n`;
-            if (this.stack.length > 0) output += this.formatStack();
-            break;
-          case State.PROBE_WAIT:
-            output = configOutput + commandList;
-            if (structures) output += `${structures}\n`;
-            if (this.stack.length > 0) {
-              output += this.formatStack() + '\n';
-            } else {
-              output += `<span class="reverse-video">0:${this.currentProbe ? '\n' + this.currentProbe : ''}</span>\n`;
-            }
-            output += `1:\n${dots}`;
-            blockInput = true;
-            break;
-          case State.PROBE_RECOVER_CONFIRM:
-            output = configOutput + commandList;
-            if (structures) output += `${structures}\n`;
-            if (this.stack.length > 0) output += this.formatStack() + '\n';
-            output += 'recover?\n0\n1';
-            break;
-          case State.PROBE_RECOVER_EDIT:
-            output = configOutput + commandList;
-            if (structures) output += `${structures}\n`;
-            if (this.stack.length > 0) output += this.formatStack();
-            break;
-          case State.CALIBRATE_ENDPOINT_RECOVER:
-            output = `/route\n<span class="reverse-video">endpoint: ${this.modelEndpoint || 'NULL'}</span>`;
-            break;
-          case State.CALIBRATE_MODEL_RECOVER:
-            output = `/route\n<span class="reverse-video">model: ${this.model || 'NULL'}</span>`;
-            break;
-          case State.CALIBRATE_WAIT:
-            output = dots;
-            blockInput = true;
-            break;
-        }
-        this.display.innerHTML = output;
-        this.input.contentEditable = !blockInput;
-        if (!blockInput) {
-          if (this.state === State.PROBE_RECOVER_EDIT && this.lastInitiation) {
-            const span = document.createElement('span');
-            span.className = 'input-reverse';
-            span.textContent = this.lastInitiation;
-            this.input.innerHTML = '';
-            this.input.appendChild(span);
-            const range = document.createRange();
-            range.selectNodeContents(span);
-            range.collapse(false);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-          } else {
-            this.input.textContent = '';
-          }
-          this.input.focus();
-        }
-      }
-
-      async process(cmd) {
-        const cmdLower = cmd.toLowerCase();
-
-        switch(this.state) {
-
-          case State.PROBE_RECOVER:
-          case State.PROBE_RECOVER_RESPONSE:
-            if (cmdLower === '/release') {
-              if (this.currentStructure) {
-                this.currentStructure.release();
-                return;
-              }
-            } else if (cmdLower === '/recover') {
-              if (this.lastActionWasFileDrop && this.structures.length > 0) {
-                this.structures.pop();
-                this.lastActionWasFileDrop = false;
-                this.state = State.PROBE_RECOVER;
-              } else if (this.stack.length > 0) {
-                this.state = State.PROBE_RECOVER_CONFIRM;
-              }
-            } else if (cmdLower === '/polarity') {
-              this.truth = !this.truth;
-              this.state = State.PROBE_RECOVER;
-            } else if (cmdLower === '/endpoint') {
-              this.state = State.CALIBRATE_ENDPOINT_RECOVER;
-            } else if (cmdLower === '/model') {
-              this.state = State.CALIBRATE_MODEL_RECOVER;
-            } else if (cmdLower.startsWith('/')) {
-              return;
-            } else {
-              this.stack.push(`0:\n${cmd}`);
-              this.currentStructure.addInitiation(cmd);
-              this.lastActionWasFileDrop = false;
-              this.state = State.PROBE_WAIT;
-              this.startWait();
-              this.currentProbe = cmd;
-              const response = await this.coordinate(cmd);
-              this.stopWait();
-              this.stack.push(`1:\n${response}`);
-              this.currentStructure.addResponse(response);
-              this.state = State.PROBE_RECOVER_RESPONSE;
-              this.lastInitiation = null;
-            }
-            break;
-
-          case State.PROBE_RECOVER_CONFIRM:
-            if (cmd === '0') {
-              this.lastInitiation = null;
-              this.state = State.PROBE_RECOVER;
-            } else if (cmd === '1') {
-              if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
-                if (this.stack[this.stack.length - 1].startsWith('1:\n')) {
-                  this.stack.pop();
-                }
-                if (this.currentStructure.log[this.currentStructure.log.length - 1].type === 'response') {
-                  this.currentStructure.log.pop();
-                }
-                if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('0:\n')) {
-                  this.lastInitiation = this.stack[this.stack.length - 1].slice('0:\n'.length);
-                  this.stack.pop();
-                } else {
-                  this.lastInitiation = '';
-                }
-                if (this.currentStructure.log.length > 0 && this.currentStructure.log[this.currentStructure.log.length - 1].type === 'initiation') {
-                  this.currentStructure.log.pop();
-                }
-                this.state = State.PROBE_RECOVER_EDIT;
-              } else {
-                this.lastInitiation = '';
-                this.state = State.PROBE_RECOVER;
-              }
-            }
-            break;
-
-          case State.PROBE_RECOVER_EDIT:
-            if (cmdLower === '/release') {
-              if (this.currentStructure) {
-                this.currentStructure.release();
-                this.lastInitiation = null;
-                return;
-              }
-            } else if (cmdLower === '/recover') {
-              this.lastInitiation = null;
-              this.state = State.PROBE_RECOVER;
-            } else if (cmdLower === '/polarity') {
-              this.truth = !this.truth;
-              this.lastInitiation = null;
-              this.state = State.PROBE_RECOVER;
-            } else if (cmdLower === '/endpoint') {
-              this.lastInitiation = null;
-              this.state = State.CALIBRATE_ENDPOINT_RECOVER;
-            } else if (cmdLower === '/model') {
-              this.lastInitiation = null;
-              this.state = State.CALIBRATE_MODEL_RECOVER;
-            } else if (cmdLower.startsWith('/')) {
-              return;
-            } else {
-              if (cmd) {
-                this.stack.push(`0:\n${cmd}`);
-                this.currentStructure.addInitiation(cmd);
-              }
-              this.lastActionWasFileDrop = false;
-              this.state = State.PROBE_WAIT;
-              this.startWait();
-              this.currentProbe = cmd;
-              const response = await this.coordinate(cmd);
-              this.stopWait();
-              this.stack.push(`1:\n${response}`);
-              this.currentStructure.addResponse(response);
-              this.state = State.PROBE_RECOVER_RESPONSE;
-              this.lastInitiation = null;
-            }
-            break;
-
-          case State.CALIBRATE_ENDPOINT_RECOVER:
-            if (cmdLower === '/route') {
-              this.state = State.PROBE_RECOVER;
-            } else {
-              this.modelEndpoint = cmd;
-              this.backdoorMode = (cmd === 'backdoor');
-              this.state = State.CALIBRATE_WAIT;
-              this.startWait();
-              setTimeout(() => {
-                this.stopWait();
-                this.state = State.PROBE_RECOVER;
-                this.render();
-              }, 3000);
-            }
-            break;
-          case State.CALIBRATE_MODEL_RECOVER:
-            if (cmdLower === '/route') {
-              this.state = State.PROBE_RECOVER;
-            } else {
-              this.model = cmd;
-              this.state = State.CALIBRATE_WAIT;
-              this.startWait();
-              setTimeout(() => {
-                this.stopWait();
-                this.state = State.PROBE_RECOVER;
-                this.render();
-              }, 3000);
-            }
-            break;
-          case State.CALIBRATE_WAIT:
-            this.state = State.PROBE_RECOVER;
-            break;
-        }
-        this.render();
       }
     }
 
