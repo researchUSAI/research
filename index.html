@@ -412,7 +412,7 @@
         }
         
         if (this.stack.length > 0) {
-          fullProbe += this.stack.join('') + '\n';
+          fullProbe += this.stack.join('');
         }
         
         fullProbe += probe;
@@ -443,7 +443,7 @@
             if (done) break;
             const chunk = new TextDecoder().decode(value);
             fullResponse += chunk;
-            // Overwrite previous llm line with growing response + double space
+            // Replace previous llm line with updated response + double space
             if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('llm:\n')) {
               this.stack.pop();
             }
@@ -485,7 +485,7 @@
             } else {
               output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span>\n\n';
             }
-            output += 'llm:\n' + dots + '\n\n';
+            output += 'llm:\n' + dots;
             blockInput = true;
             break;
           case State.PROBE_RECOVER_CONFIRM:
