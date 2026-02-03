@@ -270,7 +270,9 @@
             this.state = State.PROBE_RECOVER_CONFIRM;
           }
           this.render();
-          this.scrollToBottom();
+          if (this.display.scrollHeight > this.display.clientHeight) {
+            this.scrollToBottom();
+          }
         });
 
         document.getElementById('polarity-btn').addEventListener('click', () => {
@@ -290,7 +292,6 @@
               this.model = value;
             } else if (id === 'edit-key') {
               this.apiKey = value;
-              if (this.apiKey) e.target.textContent = '••••••••';
             }
           }
         });
@@ -475,7 +476,7 @@
 
         output += 'endpoint: <span id="edit-endpoint" class="config-value" contenteditable="true">' + (this.modelEndpoint || 'NULL') + '</span>\n';
         output += 'model: <span id="edit-model" class="config-value" contenteditable="true">' + (this.model || 'NULL') + '</span>\n';
-        output += 'key: <span id="edit-key" class="config-value" contenteditable="true">' + (this.apiKey ? '••••••••' : 'NULL') + '</span>\n';
+        output += 'key: <span id="edit-key" class="config-value" contenteditable="true">' + (this.apiKey || 'NULL') + '</span>\n';
 
         switch(this.state) {
           case State.PROBE_RECOVER:
@@ -509,7 +510,7 @@
             output += '/route\n<span class="reverse-video">model: ' + (this.model || 'NULL') + '</span>';
             break;
           case State.CALIBRATE_KEY_RECOVER:
-            output += '/route\n<span class="reverse-video">key: ' + (this.apiKey ? '••••••••' : 'NULL') + '</span>';
+            output += '/route\n<span class="reverse-video">key: ' + (this.apiKey || 'NULL') + '</span>';
             break;
           case State.CALIBRATE_WAIT:
             output += dots;
