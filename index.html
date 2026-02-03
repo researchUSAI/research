@@ -429,25 +429,27 @@
 
           const reader = response.body.getReader();
           let fullResponse = '';
-          let liveResponse = '';
 
-          this.stack.push('llm:\n');
-          this.render();
+          let hasHeader = false;
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
             const chunk = new TextDecoder().decode(value);
-            liveResponse += chunk;
             fullResponse += chunk;
 
-            this.stack[this.stack.length - 1] = `llm:\n${liveResponse}`;
+            if (!hasHeader) {
+              this.stack.push(`llm:\n${fullResponse}`);
+              hasHeader = true;
+            } else {
+              this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
+            }
+
             this.render();
           }
 
           this.currentStructure.addResponse(fullResponse);
-          this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
 
           return fullResponse;
         } catch (e) {
@@ -491,7 +493,6 @@
             } else {
               output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
             }
-            output += 'llm:\n';
             blockInput = true;
             break;
           case State.PROBE_RECOVER_CONFIRM:
