@@ -19,6 +19,40 @@
       font-size: 16px;
       line-height: 24px;
       overflow: hidden;
+      text-shadow: 0 0 5px rgba(189, 206, 241, 0.5);
+      position: relative;
+    }
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(0, 0, 0, 0.1) 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: scanline 8s linear infinite;
+    }
+    @keyframes scanline {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(4px); }
+    }
+    /* Blinking cursor */
+    #input::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: #BDCEF1;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
     }
     #toolbar {
       flex: 0 0 auto;
@@ -70,6 +104,7 @@
       font-family: inherit;
       font-size: inherit;
       padding: 0 1ch;
+      caret-color: transparent;
     }
     #input .input-reverse {
       background: #BDCEF1;
