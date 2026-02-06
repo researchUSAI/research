@@ -456,10 +456,10 @@
         return this.stack.map(line => {
           if (line.startsWith('user:\n')) {
             const probe = line.slice('user:\n'.length);
-            return '<span class="reverse-video">user:\n' + probe + '</span><div class="message-separator"></div>';
+            return '<span class="reverse-video">post:\n' + probe + '</span><div class="message-separator"></div>';
           } else if (line.startsWith('llm:\n')) {
             const response = line.slice('llm:\n'.length);
-            return 'llm:\n' + response + '<div class="message-separator"></div>';
+            return 'reply:\n' + response + '<div class="message-separator"></div>';
           }
           return line;
         }).join('');
@@ -567,6 +567,7 @@
         const maskedKey = (this.apiKey && this.apiKey !== 'NULL') ? '•'.repeat(this.apiKey.length) : 'NULL';
         output += 'key: <span id="edit-key" class="config-value" contenteditable="true" data-actual-key="' + (this.apiKey || '') + '">' + maskedKey + '</span>\n';
         output += 'preference: <span id="edit-preference" class="config-value" contenteditable="true">' + (this.preference || 'NULL') + '</span>\n';
+        output += '<div class="message-separator"></div>';
 
         switch(this.state) {
           case State.PROBE_RECOVER:
@@ -579,7 +580,7 @@
             if (this.stack.length > 0) {
               output += this.formatStack();
             } else {
-              output += '<span class="reverse-video">user:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
+              output += '<span class="reverse-video">post:' + (this.currentProbe ? '\n' + this.currentProbe : '') + '</span><div class="message-separator"></div>';
             }
             blockInput = true;
             break;
