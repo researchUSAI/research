@@ -292,11 +292,41 @@
             this.structures.pop();
             this.lastActionWasFileDrop = false;
             this.state = State.PROBE_RECOVER;
+            this.render();
+            this.scrollToBottom();
           } else if (this.stack.length > 0) {
-            this.state = State.PROBE_RECOVER_CONFIRM;
+            // Show confirm dialog instead of terminal y/n
+            if (confirm('Go back and edit the last message?')) {
+              // Yes - go back
+              if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
+                if (this.stack[this.stack.length - 1].startsWith('llm:\n')) {
+                  this.stack.pop();
+                }
+                if (this.currentStructure.log[this.currentStructure.log.length - 1].type === 'response') {
+                  this.currentStructure.log.pop();
+                }
+                if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('user:\n')) {
+                  this.lastInitiation = this.stack[this.stack.length - 1].slice('user:\n'.length);
+                  this.stack.pop();
+                } else {
+                  this.lastInitiation = '';
+                }
+                if (this.currentStructure.log.length > 0 && this.currentStructure.log[this.currentStructure.log.length - 1].type === 'initiation') {
+                  this.currentStructure.log.pop();
+                }
+                this.state = State.PROBE_RECOVER_EDIT;
+              } else {
+                this.lastInitiation = '';
+                this.state = State.PROBE_RECOVER;
+              }
+            } else {
+              // No - cancel
+              this.lastInitiation = null;
+              this.state = State.PROBE_RECOVER;
+            }
+            this.render();
+            this.scrollToBottom();
           }
-          this.render();
-          this.scrollToBottom();
         });
 
         document.getElementById('polarity-btn').addEventListener('click', () => {
@@ -584,11 +614,6 @@
             }
             blockInput = true;
             break;
-          case State.PROBE_RECOVER_CONFIRM:
-            if (structures) output += structures + '\n';
-            if (this.stack.length > 0) output += this.formatStack();
-            output += 'back?\ny\nn';
-            break;
           case State.PROBE_RECOVER_EDIT:
             if (structures) output += structures + '\n';
             if (this.stack.length > 0) output += this.formatStack();
@@ -634,7 +659,35 @@
                 this.lastActionWasFileDrop = false;
                 this.state = State.PROBE_RECOVER;
               } else if (this.stack.length > 0) {
-                this.state = State.PROBE_RECOVER_CONFIRM;
+                // Show confirm dialog
+                if (confirm('Go back and edit the last message?')) {
+                  // Yes - go back
+                  if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
+                    if (this.stack[this.stack.length - 1].startsWith('llm:\n')) {
+                      this.stack.pop();
+                    }
+                    if (this.currentStructure.log[this.currentStructure.log.length - 1].type === 'response') {
+                      this.currentStructure.log.pop();
+                    }
+                    if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('user:\n')) {
+                      this.lastInitiation = this.stack[this.stack.length - 1].slice('user:\n'.length);
+                      this.stack.pop();
+                    } else {
+                      this.lastInitiation = '';
+                    }
+                    if (this.currentStructure.log.length > 0 && this.currentStructure.log[this.currentStructure.log.length - 1].type === 'initiation') {
+                      this.currentStructure.log.pop();
+                    }
+                    this.state = State.PROBE_RECOVER_EDIT;
+                  } else {
+                    this.lastInitiation = '';
+                    this.state = State.PROBE_RECOVER;
+                  }
+                } else {
+                  // No - cancel
+                  this.lastInitiation = null;
+                  this.state = State.PROBE_RECOVER;
+                }
               }
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
@@ -659,35 +712,6 @@
               this.stopWait();
               this.state = State.PROBE_RECOVER_RESPONSE;
               this.lastInitiation = null;
-            }
-            break;
-
-          case State.PROBE_RECOVER_CONFIRM:
-            if (cmdLower === 'n') {
-              this.lastInitiation = null;
-              this.state = State.PROBE_RECOVER;
-            } else if (cmdLower === 'y') {
-              if (this.stack.length > 0 && this.currentStructure.log.length > 0) {
-                if (this.stack[this.stack.length - 1].startsWith('llm:\n')) {
-                  this.stack.pop();
-                }
-                if (this.currentStructure.log[this.currentStructure.log.length - 1].type === 'response') {
-                  this.currentStructure.log.pop();
-                }
-                if (this.stack.length > 0 && this.stack[this.stack.length - 1].startsWith('user:\n')) {
-                  this.lastInitiation = this.stack[this.stack.length - 1].slice('user:\n'.length);
-                  this.stack.pop();
-                } else {
-                  this.lastInitiation = '';
-                }
-                if (this.currentStructure.log.length > 0 && this.currentStructure.log[this.currentStructure.log.length - 1].type === 'initiation') {
-                  this.currentStructure.log.pop();
-                }
-                this.state = State.PROBE_RECOVER_EDIT;
-              } else {
-                this.lastInitiation = '';
-                this.state = State.PROBE_RECOVER;
-              }
             }
             break;
 
