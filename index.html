@@ -50,6 +50,10 @@
       animation: blink 1s step-end infinite;
       color: #BDCEF1;
     }
+    /* Hide ::after when inline cursor is visible */
+    #input.has-inline-cursor::after {
+      display: none;
+    }
     /* Inline cursor for when clicking inside text */
     #inline-cursor {
       position: absolute;
@@ -215,7 +219,8 @@
           if (entry.type === 'initiation') {
             text += `USER ${time}:\n${entry.probe}\n\n`;
           } else if (entry.type === 'response') {
-            text += `LLM ${time}:\n${entry.probe}\n\n`;
+            const responseWithHeader = this.header ? this.header + entry.probe : entry.probe;
+            text += `LLM ${time}:\n${responseWithHeader}\n\n`;
           }
         }
 
@@ -425,6 +430,11 @@
         });
 
         document.getElementById('copy-btn').addEventListener('click', () => {
+          const btn = document.getElementById('copy-btn');
+          
+          // Prevent multiple clicks
+          if (btn.textContent === 'Copied!') return;
+          
           // Find the most recent LLM response in the stack
           let lastResponse = '';
           for (let i = this.stack.length - 1; i >= 0; i--) {
@@ -435,15 +445,12 @@
           }
           
           if (lastResponse) {
-            // Apply header if set
+            // Add header to copied text
             const textToCopy = this.header ? this.header + lastResponse : lastResponse;
             navigator.clipboard.writeText(textToCopy).then(() => {
-              // Optional: provide visual feedback
-              const btn = document.getElementById('copy-btn');
-              const originalText = btn.textContent;
               btn.textContent = 'Copied!';
               setTimeout(() => {
-                btn.textContent = originalText;
+                btn.textContent = 'Copy';
               }, 1000);
             }).catch(() => {
               alert('Failed to copy to clipboard');
@@ -597,6 +604,7 @@
         const sel = window.getSelection();
         if (!sel.rangeCount || document.activeElement !== this.input) {
           this.inlineCursor.style.display = 'none';
+          this.input.classList.remove('has-inline-cursor');
           return;
         }
 
@@ -604,6 +612,7 @@
         if (!range.collapsed) {
           // Text is selected, hide cursor
           this.inlineCursor.style.display = 'none';
+          this.input.classList.remove('has-inline-cursor');
           return;
         }
 
@@ -612,6 +621,7 @@
         const containerRect = document.getElementById('display-container').getBoundingClientRect();
         
         this.inlineCursor.style.display = 'block';
+        this.input.classList.add('has-inline-cursor');
         this.inlineCursor.style.left = `${rect.left - containerRect.left}px`;
         this.inlineCursor.style.top = `${rect.top - containerRect.top}px`;
       }
@@ -631,7 +641,8 @@
             return '<span class="reverse-video">post:\n' + probe + '</span><div class="message-separator"></div>';
           } else if (line.startsWith('llm:\n')) {
             const response = line.slice('llm:\n'.length);
-            return 'reply:\n' + response + '<div class="message-separator"></div>';
+            const displayResponse = this.header ? this.header + response : response;
+            return 'reply:\n' + displayResponse + '<div class="message-separator"></div>';
           }
           return line;
         }).join('');
@@ -690,22 +701,19 @@
             fullResponse += chunk;
 
             if (!hasHeader) {
-              // Add header to the response on first chunk
-              const responseWithHeader = this.header ? this.header + fullResponse : fullResponse;
-              this.stack.push(`llm:\n${responseWithHeader}`);
+              // Don't add header to stack, just mark that we've started
+              this.stack.push(`llm:\n${fullResponse}`);
               hasHeader = true;
             } else {
-              // Update with header on subsequent chunks
-              const responseWithHeader = this.header ? this.header + fullResponse : fullResponse;
-              this.stack[this.stack.length - 1] = `llm:\n${responseWithHeader}`;
+              // Update without header
+              this.stack[this.stack.length - 1] = `llm:\n${fullResponse}`;
             }
 
             this.render();
           }
 
-          // Store final response WITH header
-          const finalResponseWithHeader = this.header ? this.header + fullResponse : fullResponse;
-          this.currentStructure.addResponse(finalResponseWithHeader);
+          // Store final response WITHOUT header
+          this.currentStructure.addResponse(fullResponse);
 
           return fullResponse;
         } catch (e) {
