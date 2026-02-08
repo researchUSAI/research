@@ -493,21 +493,28 @@
         this.display.addEventListener('blur', (e) => {
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
-            const value = e.target.textContent.trim();
             if (id === 'edit-endpoint') {
-              this.modelEndpoint = value;
+              this.modelEndpoint = e.target.textContent.trim();
             } else if (id === 'edit-model') {
-              this.model = value;
+              this.model = e.target.textContent.trim();
             } else if (id === 'edit-key') {
               this.keyFieldBeingEdited = false;
+              const value = e.target.textContent.trim();
               if (!value.match(/^•+$/) && value !== 'NULL' && value !== '') {
                 this.apiKey = value;
               }
               // Mask the key in place without re-rendering to prevent layout shift
               const maskedKey = (this.apiKey && this.apiKey !== 'NULL') ? '•'.repeat(this.apiKey.length) : 'NULL';
               e.target.textContent = maskedKey;
+            } else if (id === 'edit-header') {
+              // Don't trim header - preserve whitespace
+              let headerText = e.target.textContent;
+              headerText = headerText.replace(/\u00A0/g, ' ');
+              if (headerText !== 'NULL') {
+                this.header = headerText;
+              }
             } else if (id === 'edit-preference') {
-              this.preference = value;
+              this.preference = e.target.textContent.trim();
             }
           }
         }, true);
@@ -515,15 +522,19 @@
         this.display.addEventListener('input', (e) => {
           if (e.target.classList.contains('config-value')) {
             const id = e.target.id;
-            const value = e.target.textContent.trim();
             if (id === 'edit-endpoint') {
-              this.modelEndpoint = value;
+              this.modelEndpoint = e.target.textContent.trim();
             } else if (id === 'edit-model') {
-              this.model = value;
+              this.model = e.target.textContent.trim();
             } else if (id === 'edit-key') {
-              this.apiKey = value;
+              this.apiKey = e.target.textContent.trim();
+            } else if (id === 'edit-header') {
+              // Don't trim header - preserve whitespace
+              let headerText = e.target.textContent;
+              headerText = headerText.replace(/\u00A0/g, ' ');
+              this.header = headerText;
             } else if (id === 'edit-preference') {
-              this.preference = value;
+              this.preference = e.target.textContent.trim();
             }
           }
         });
