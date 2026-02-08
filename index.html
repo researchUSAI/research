@@ -139,7 +139,8 @@
   <div id="toolbar">
     <button id="export-btn">Export</button>
     <button id="back-btn">Back</button>
-    <button id="polarity-btn">Short</button>
+    <button id="toxic-btn">Normal</button>
+    <button id="polarity-btn">Short Response</button>
     <button id="support-btn">Support Us</button>
     <button id="getkey-btn">Get Key</button>
   </div>
@@ -214,6 +215,7 @@
         this.apiKey = '';
         this.preference = '';
         this.truth = true;
+        this.toxic = false;
         this.dotCount = 0;
         this.dotInterval = null;
         this.display = document.getElementById('display');
@@ -357,9 +359,15 @@
           }
         });
 
+        document.getElementById('toxic-btn').addEventListener('click', () => {
+          this.toxic = !this.toxic;
+          document.getElementById('toxic-btn').textContent = this.toxic ? 'Toxic' : 'Normal';
+          this.render();
+        });
+
         document.getElementById('polarity-btn').addEventListener('click', () => {
           this.truth = !this.truth;
-          document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+          document.getElementById('polarity-btn').textContent = this.truth ? 'Short Response' : 'Long Response';
           this.render();
         });
 
@@ -550,6 +558,7 @@
             body: JSON.stringify({
               probe: fullProbe,
               truth: this.truth,
+              toxic: this.toxic,
               preference: this.preference,
               base_url: this.modelEndpoint,
               api_key: this.apiKey,
@@ -728,7 +737,7 @@
               }
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Short Response' : 'Long Response';
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
               this.state = State.CALIBRATE_ENDPOINT_RECOVER;
@@ -764,7 +773,7 @@
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/polarity') {
               this.truth = !this.truth;
-              document.getElementById('polarity-btn').textContent = this.truth ? 'Short' : 'Long';
+              document.getElementById('polarity-btn').textContent = this.truth ? 'Short Response' : 'Long Response';
               this.lastInitiation = null;
               this.state = State.PROBE_RECOVER;
             } else if (cmdLower === '/endpoint') {
