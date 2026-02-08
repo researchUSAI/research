@@ -658,7 +658,7 @@
           // If it's bullets or NULL, keep the existing this.apiKey value
         }
         if (headerEl) {
-          const headerText = headerEl.textContent.trim();
+          const headerText = headerEl.textContent;
           this.header = (headerText !== 'NULL' && headerText !== '') ? headerText : '';
         }
         if (preferenceEl && preferenceEl.textContent.trim() !== 'NULL') {
@@ -673,7 +673,8 @@
         output += 'model: <span id="edit-model" class="config-value" contenteditable="true">' + (this.model || 'grok-3') + '</span>\n';
         const maskedKey = (this.apiKey && this.apiKey !== 'NULL') ? '•'.repeat(this.apiKey.length) : 'NULL';
         output += 'key: <span id="edit-key" class="config-value" contenteditable="true" data-actual-key="' + (this.apiKey || '') + '">' + maskedKey + '</span>\n';
-        output += 'header: <span id="edit-header" class="config-value" contenteditable="true">' + (this.header || 'NULL') + '</span>\n';
+        const headerDisplay = this.header ? this.header.replace(/ /g, '&nbsp;') : 'NULL';
+        output += 'header: <span id="edit-header" class="config-value" contenteditable="true">' + headerDisplay + '</span>\n';
         output += 'preference: <span id="edit-preference" class="config-value" contenteditable="true">' + (this.preference || 'NULL') + '</span>\n';
         output += '<div class="message-separator"></div>';
 
