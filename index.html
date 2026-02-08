@@ -134,10 +134,9 @@
       padding: 0 0.5ch;
       cursor: text;
       white-space: pre-wrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 80ch;
-      display: inline-block;
+      word-wrap: break-word;
+      max-width: 78ch;
+      display: inline;
     }
     .message-separator {
       height: 1em;
@@ -450,8 +449,9 @@
               if (!value.match(/^•+$/) && value !== 'NULL' && value !== '') {
                 this.apiKey = value;
               }
-              // Re-render to mask the key
-              this.render();
+              // Mask the key in place without re-rendering to prevent layout shift
+              const maskedKey = (this.apiKey && this.apiKey !== 'NULL') ? '•'.repeat(this.apiKey.length) : 'NULL';
+              e.target.textContent = maskedKey;
             } else if (id === 'edit-preference') {
               this.preference = value;
             }
