@@ -507,14 +507,8 @@
               const maskedKey = (this.apiKey && this.apiKey !== 'NULL') ? '•'.repeat(this.apiKey.length) : 'NULL';
               e.target.textContent = maskedKey;
             } else if (id === 'edit-header') {
-              // Read innerHTML to preserve &nbsp; entities
-              let headerHTML = e.target.innerHTML;
-              // Convert &nbsp; to regular spaces
-              let headerText = headerHTML.replace(/&nbsp;/g, ' ');
-              // Strip any other HTML tags but keep the text
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = headerText;
-              headerText = tempDiv.textContent || tempDiv.innerText || '';
+              // Use innerText to preserve whitespace
+              let headerText = e.target.innerText;
               if (headerText !== 'NULL') {
                 this.header = headerText;
               }
@@ -534,15 +528,8 @@
             } else if (id === 'edit-key') {
               this.apiKey = e.target.textContent.trim();
             } else if (id === 'edit-header') {
-              // Read innerHTML to preserve &nbsp; entities
-              let headerHTML = e.target.innerHTML;
-              // Convert &nbsp; to regular spaces
-              let headerText = headerHTML.replace(/&nbsp;/g, ' ');
-              // Strip any other HTML tags but keep the text
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = headerText;
-              headerText = tempDiv.textContent || tempDiv.innerText || '';
-              this.header = headerText;
+              // Use innerText to preserve whitespace
+              this.header = e.target.innerText;
             } else if (id === 'edit-preference') {
               this.preference = e.target.textContent.trim();
             }
